@@ -1,0 +1,12 @@
+{application, erlpmd,
+ [
+  {description, ""},
+  {vsn, "1.0.0"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { erlpmd_app, []}},
+  {env, []}
+ ]}.
