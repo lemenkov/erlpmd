@@ -55,7 +55,7 @@ init ([{I0, I1, I2, I3, I4, I5, I6, I7} = IPv6, Port]) when
 	Opts = [{ip, IPv6}, binary, {packet, 2}, {reuseaddr, true}, {keepalive, true}, {backlog, 30}, {active, false}, inet6],
 	{ok, Socket} = gen_tcp:listen(Port, Opts),
 	{ok, Ref} = prim_inet:async_accept(Socket, -1),
-	error_logger:info_msg("ErlPMD listener:;;;;;;;;;;;; started at ~s:~b.~n", [inet_parse:ntoa(IPv6), Port]),
+	error_logger:info_msg("ErlPMD listener: started at ~s:~b.~n", [inet_parse:ntoa(IPv6), Port]),
 	{ok, #state{listener = Socket, acceptor = Ref}};
 
 init ([{I0, I1, I2, I3} = IPv4, Port]) when
