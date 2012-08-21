@@ -42,6 +42,6 @@ You need [erlando](https://github.com/rabbitmq/erlando) installed.
 See [sample script](https://raw.github.com/lemenkov/erlpmd/master/priv/erlpmd.sh) sample script or run erl and type
 application:start(erlpmd).
 
-<h1>Official EPMD protocol desctiption</h1>
+<h1>Official EPMD protocol description</h1>
 
 See [this link](http://www.erlang.org/doc/apps/erts/erl_dist_protocol.html) for further details.
