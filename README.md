@@ -35,13 +35,13 @@ itself.
 It stores nodes' data in the ETS storage.
 
 <h1>Installation</h1>
-You need (erlando)[https://github.com/rabbitmq/erlando) installed.
+You need [erlando](https://github.com/rabbitmq/erlando) installed.
 
 <h1>Usage</h1>
 
-See [sample script](./priv/erlpmd.sh) sample script or run erl and type
+See [sample script](https://raw.github.com/lemenkov/erlpmd/master/priv/erlpmd.sh) sample script or run erl and type
 application:start(erlpmd).
 
 <h1>Official EPMD protocol desctiption</h1>
 
-See (this link)[http://www.erlang.org/doc/apps/erts/erl_dist_protocol.html] for further details.
+See [this link](http://www.erlang.org/doc/apps/erts/erl_dist_protocol.html) for further details.
