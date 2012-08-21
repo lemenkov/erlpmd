@@ -101,10 +101,15 @@ handle_cast({msg,<<$k>>, Fd, Ip, Port}, State) ->
 	gen_server:cast(listener, stop),
 	{stop, normal, State};
 
-handle_cast({msg,<<$s, _NodeName/binary>>, Fd, Ip, Port}, State) ->
-	error_logger:warning_msg("ErlPMD: stop request from ~s:~p (IGNORED for now).~n", [inet_parse:ntoa(Ip), Port]),
-%	gen_server:cast(listener, {msg, <<"NOEXIST">>, Ip, Port}),
-	gen_server:cast(listener, {msg, <<"STOPPED">>, Ip, Port}),
+handle_cast({msg,<<$s, NodeName/binary>>, Fd, Ip, Port}, State) ->
+	error_logger:warning_msg("ErlPMD: stop request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
+	case ets:match(erlpmd, {'', {'_', '_', '_', '_', '_', '_', '_', '_'}}) of
+		[] ->
+			gen_server:cast(listener, {msg, <<"NOEXIST">>, Ip, Port});
+		_ ->
+			ets:delete(erlpmd, NodeName),
+			gen_server:cast(listener, {msg, <<"STOPPED">>, Ip, Port})
+	end,
 	gen_server:cast(listener, {close, Ip, Port}),
 	{noreply, State};
 
