@@ -1,4 +1,4 @@
-%% Copyright (c) 2011 Peter Lemenkov.
+%% Copyright (c) 2012 Peter Lemenkov.
 %%
 %% The MIT License
 %%

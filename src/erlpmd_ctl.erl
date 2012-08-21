@@ -21,19 +21,9 @@
 %% THE SOFTWARE.
 %%
 
--module(erlpmd_app).
+-module(erlpmd_ctl).
 
--behaviour(application).
+-export([start/0]).
 
-%% Application callbacks
--export([start/2, stop/1]).
-
-%% ===================================================================
-%% Application callbacks
-%% ===================================================================
-
-start(_StartType, _StartArgs) ->
-    erlpmd_sup:start_link().
-
-stop(_State) ->
-    ok.
+start() ->
+	application:start(erlpmd).
