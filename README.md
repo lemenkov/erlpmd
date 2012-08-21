@@ -29,7 +29,7 @@ THE SOFTWARE.
 <h1>Introduction</h1>
 
 This is a drop-in replacement for the server-side part of the epmd (Erlang Port
-Mapping Daemon). if you need a client-side part I advise you to use nc or epmd
+Mapping Daemon). If you need a client-side part I advise you to use nc or epmd
 itself.
 
 It stores nodes' data in the ETS storage.
