@@ -26,4 +26,42 @@
 -export([start/0]).
 
 start() ->
+	Addr = case init:get_argument(address)of
+		error ->
+			{0,0,0,0};
+		{ok,[[AddrStr]]} ->
+			% FIXME
+			{0,0,0,0}
+	end,
+
+	Port = case init:get_argument(port) of
+		error -> 4369;
+		{ok,[[PortStr]]} ->
+			list_to_integer(PortStr)
+	end,
+
+	% Set debug level - ignored for now
+	% init:get_argument(d),
+	% init:get_argument(debug),
+
+	% Run daemonised - ignored for now
+	% init:get_argument(daemon),
+
+	% Allow this instance of epmd to be killed with
+	% epmd -kill even if there are registered nodes.
+	% Also allows forced unregister (epmd -stop)
+	RelaxedCommandCheck = case init:get_argument(relaxed_command_check) of
+		error -> false;
+		_ -> true
+	end,
+
+	% FIXME
+	% init:get_argument(packet_timeout),
+	% init:get_argument(delay_accept),
+	% init:get_argument(delay_write),
+
+	application:set_env(erlpmd, address, Addr),
+	application:set_env(erlpmd, port, Port),
+	application:set_env(erlpmd, relaxed_command_check, RelaxedCommandCheck),
+
 	application:start(erlpmd).

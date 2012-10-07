@@ -33,7 +33,9 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    erlpmd_sup:start_link().
+	{ok, Ip} = application:get_env(erlpmd,addr),
+	{ok, Port} = application:get_env(erlpmd,port),
+	erlpmd_sup:start_link(Ip,Port).
 
 stop(_State) ->
     ok.
