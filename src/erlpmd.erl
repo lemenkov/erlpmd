@@ -52,7 +52,8 @@ start_link(Args) ->
 init(Args) ->
 	?MODULE = ets:new(?MODULE, [public, named_table]),
 	error_logger:info_msg("ErlPMD: started.~n"),
-	{ok, Args}.
+	{ok, RelaxedCommandCheck} = application:get_env(erlpmd, relaxed_command_check),
+	{ok, RelaxedCommandCheck}.
 
 handle_call(Request, From, State) ->
 	error_logger:warning_msg("ErlPMD: strange call: ~p from: ~p.~n", [Request, From]),
@@ -95,13 +96,30 @@ handle_cast({msg,<<$d>>, Fd, Ip, Port}, State) ->
 	gen_server:cast(listener, {close, Ip, Port}),
 	{noreply, State};
 
-handle_cast({msg,<<$k>>, Fd, Ip, Port}, State) ->
+handle_cast({msg,<<$k>>, Fd, Ip, Port}, RelaxedCommandCheck) ->
 	error_logger:info_msg("ErlPMD: kill request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
 	gen_server:cast(listener, {msg, <<"OK">>, Ip, Port}),
-	gen_server:cast(listener, stop),
-	{stop, normal, State};
+	case ets:match(erlpmd, {'_', {'_', '_', '_', '_', '_', '_', '_', '_'}}) of
+		[] ->
+			% No live nodes - we may exit now
+			gen_server:cast(listener, stop),
+			{stop, normal, RelaxedCommandCheck};
+		_ ->
+			case RelaxedCommandCheck of
+				true ->
+					gen_server:cast(listener, stop),
+					{stop, normal, RelaxedCommandCheck};
+				false ->
+					% Disallow killing witl live nodes
+					{noreply, RelaxedCommandCheck}
+			end
+	end;
 
-handle_cast({msg,<<$s, NodeName/binary>>, Fd, Ip, Port}, State) ->
+handle_cast({msg,<<$s, _/binary>>, Fd, Ip, Port}, false) ->
+	% Ignore stop command in case we're running w/o -relaxed_command_check
+	gen_server:cast(listener, {msg, <<"STOPPED">>, Ip, Port}),
+	{noreply, false};
+handle_cast({msg,<<$s, NodeName/binary>>, Fd, Ip, Port}, true) ->
 	error_logger:info_msg("ErlPMD: stop request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
 	case ets:match(erlpmd, {NodeName, {'_', '_', '_', '_', '_', '_', '_', '_'}}) of
 		[] ->
@@ -111,7 +129,7 @@ handle_cast({msg,<<$s, NodeName/binary>>, Fd, Ip, Port}, State) ->
 			gen_server:cast(listener, {msg, <<"STOPPED">>, Ip, Port})
 	end,
 	gen_server:cast(listener, {close, Ip, Port}),
-	{noreply, State};
+	{noreply, true};
 
 handle_cast({close, Fd}, State) ->
 	error_logger:info_msg("ErlPMD: closed connection: ~p.~n", [Fd]),
