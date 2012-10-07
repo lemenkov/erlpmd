@@ -51,7 +51,7 @@ start_link(Args) ->
 
 init(Args) ->
 	?MODULE = ets:new(?MODULE, [public, named_table]),
-	error_logger:warning_msg("ErlPMD: started.~n"),
+	error_logger:info_msg("ErlPMD: started.~n"),
 	{ok, Args}.
 
 handle_call(Request, From, State) ->
@@ -59,7 +59,7 @@ handle_call(Request, From, State) ->
 	{reply, ok, State}.
 
 handle_cast({msg,<<$x, PortNo:16, NodeType:8, Proto:8, HiVer:16, LoVer:16, NLen:16, Rest/binary>>, Fd, Ip, Port}, State) ->
-	error_logger:warning_msg("ErlPMD: alive request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
+	error_logger:info_msg("ErlPMD: alive request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
 	<<NodeName:NLen/binary, ELen:16, Extra/binary>> = Rest,
 	Creation = random:uniform(3),
 	error_logger:warning_msg("DUMP: ~p~n", [[PortNo, NodeType, Proto, HiVer, LoVer, NodeName, Extra, Creation]]),
@@ -69,7 +69,7 @@ handle_cast({msg,<<$x, PortNo:16, NodeType:8, Proto:8, HiVer:16, LoVer:16, NLen:
 	{noreply, State};
 
 handle_cast({msg,<<$z, NodeName/binary>>, Fd, Ip, Port}, State) ->
-	error_logger:warning_msg("ErlPMD: port request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
+	error_logger:info_msg("ErlPMD: port request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
 	case ets:lookup(?MODULE, NodeName) of
 		[] ->
 			gen_server:cast(listener, {msg, <<$w, 1:8>>, Ip, Port});
@@ -82,27 +82,27 @@ handle_cast({msg,<<$z, NodeName/binary>>, Fd, Ip, Port}, State) ->
 	{noreply, State};
 
 handle_cast({msg,<<$n>>, Fd, Ip, Port}, State) ->
-	error_logger:warning_msg("ErlPMD: name request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
+	error_logger:info_msg("ErlPMD: name request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
 	Nodes = list_to_binary(lists:flatten([ io_lib:format("name ~s at port ~p~n", [X, Y]) || [X, Y] <- ets:match(erlpmd, {'$1', {'$2', 77, '_', '_', '_', '_', '_', '_'}})])),
 	gen_server:cast(listener, {msg, <<4369:32, Nodes/binary>>, Ip, Port}),
 	gen_server:cast(listener, {close, Ip, Port}),
 	{noreply, State};
 
 handle_cast({msg,<<$d>>, Fd, Ip, Port}, State) ->
-	error_logger:warning_msg("ErlPMD: dump request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
+	error_logger:info_msg("ErlPMD: dump request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
 	Nodes = list_to_binary(lists:flatten([ io_lib:format("active name     ~s at port ~p, fd = ~p ~n", [X, Y, F]) || [X, Y, F] <- ets:match(erlpmd, {'$1', {'$2', 77, '_', '_', '_', '_', '_', '$3'}})])),
 	gen_server:cast(listener, {msg, <<4369:32, Nodes/binary>>, Ip, Port}),
 	gen_server:cast(listener, {close, Ip, Port}),
 	{noreply, State};
 
 handle_cast({msg,<<$k>>, Fd, Ip, Port}, State) ->
-	error_logger:warning_msg("ErlPMD: kill request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
+	error_logger:info_msg("ErlPMD: kill request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
 	gen_server:cast(listener, {msg, <<"OK">>, Ip, Port}),
 	gen_server:cast(listener, stop),
 	{stop, normal, State};
 
 handle_cast({msg,<<$s, NodeName/binary>>, Fd, Ip, Port}, State) ->
-	error_logger:warning_msg("ErlPMD: stop request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
+	error_logger:info_msg("ErlPMD: stop request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
 	case ets:match(erlpmd, {NodeName, {'_', '_', '_', '_', '_', '_', '_', '_'}}) of
 		[] ->
 			gen_server:cast(listener, {msg, <<"NOEXIST">>, Ip, Port});
@@ -114,7 +114,7 @@ handle_cast({msg,<<$s, NodeName/binary>>, Fd, Ip, Port}, State) ->
 	{noreply, State};
 
 handle_cast({close, Fd}, State) ->
-	error_logger:warning_msg("ErlPMD: closed connection: ~p.~n", [Fd]),
+	error_logger:info_msg("ErlPMD: closed connection: ~p.~n", [Fd]),
 	case ets:match(erlpmd, {'$1', {'_', '_', '_', '_', '_', '_', '_', Fd}}) of
 		[[NodeName]] -> ets:delete(erlpmd, NodeName);
 		_ -> ok
@@ -130,7 +130,7 @@ handle_info(Info, State) ->
 	{noreply, State}.
 
 terminate(_Reason, _State) ->
-	error_logger:warning_msg("ErlPMD: stopped.~n"),
+	error_logger:info_msg("ErlPMD: stopped.~n"),
 	ok.
 
 code_change(_OldVsn, State, _Extra) ->

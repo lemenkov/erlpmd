@@ -85,7 +85,7 @@ handle_cast({msg, Msg, Ip, Port}, State = #state{clients=Clients}) ->
 	{noreply, State};
 
 handle_cast({close, Ip, Port}, State = #state{clients=Clients}) ->
-	error_logger:warning_msg("ErlPMD listener: closing connection: ~s:~b.~n", [inet_parse:ntoa(Ip), Port]),
+	error_logger:info_msg("ErlPMD listener: closing connection: ~s:~b.~n", [inet_parse:ntoa(Ip), Port]),
 	case get_socket(Clients, Ip, Port) of
 		error ->
 			ok;
@@ -111,7 +111,7 @@ handle_info({tcp, Fd, Msg}, State) ->
 handle_info({tcp_closed, Client}, State = #state{clients=Clients}) ->
 	gen_tcp:close(Client),
 	gen_server:cast(erlpmd, {close, Client}),
-	error_logger:warning_msg("ErlPMD listener: client ~p closed connection.~n", [Client]),
+	error_logger:info_msg("ErlPMD listener: client ~p closed connection.~n", [Client]),
 	{noreply, State#state{clients = lists:delete(Client, Clients)}};
 
 handle_info({inet_async, ListSock, Ref, {ok, CliSocket}}, #state{listener=ListSock, acceptor=Ref, clients = Clients} = State) ->
