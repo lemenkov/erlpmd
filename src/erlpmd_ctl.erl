@@ -43,6 +43,7 @@ start() ->
 		_ -> true
 	end,
 
+	% Now check for command-line switches
 	Addr = case init:get_argument(address)of
 		error -> EnvAddr;
 		 % FIXME
