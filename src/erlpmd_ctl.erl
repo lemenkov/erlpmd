@@ -26,18 +26,32 @@
 -export([start/0]).
 
 start() ->
+	% Check environment variables first
+	EnvAddr = case os:getenv("ERL_EPMD_ADDRESS") of
+		false -> {0,0,0,0};
+		% FIXME
+		AddrStr -> {0,0,0,0}
+	end,
+
+	EnvPort = case os:getenv("ERL_EPMD_PORT") of
+		false -> 4369;
+		PortStr -> list_to_integer(PortStr)
+	end,
+
+	EnvRelaxedCommandCheck = case os:getenv("ERL_EPMD_RELAXED_COMMAND_CHECK") of
+		false -> false;
+		_ -> true
+	end,
+
 	Addr = case init:get_argument(address)of
-		error ->
-			{0,0,0,0};
-		{ok,[[AddrStr]]} ->
-			% FIXME
-			{0,0,0,0}
+		error -> EnvAddr;
+		 % FIXME
+		{ok,[[AddrStr]]} -> {0,0,0,0}
 	end,
 
 	Port = case init:get_argument(port) of
-		error -> 4369;
-		{ok,[[PortStr]]} ->
-			list_to_integer(PortStr)
+		error -> EnvPort;
+		{ok,[[PortStr]]} -> list_to_integer(PortStr)
 	end,
 
 	% Set debug level - ignored for now
@@ -51,7 +65,7 @@ start() ->
 	% epmd -kill even if there are registered nodes.
 	% Also allows forced unregister (epmd -stop)
 	RelaxedCommandCheck = case init:get_argument(relaxed_command_check) of
-		error -> false;
+		error -> EnvRelaxedCommandCheck;
 		_ -> true
 	end,
 
