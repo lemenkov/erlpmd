@@ -60,10 +60,11 @@ handle_call(Request, From, State) ->
 	{reply, ok, State}.
 
 handle_cast({msg,<<$x, PortNo:16, NodeType:8, Proto:8, HiVer:16, LoVer:16, NLen:16, Rest/binary>>, Fd, Ip, Port}, State) ->
-	error_logger:info_msg("ErlPMD: alive request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
 	<<NodeName:NLen/binary, ELen:16, Extra/binary>> = Rest,
 	Creation = random:uniform(3),
-	error_logger:warning_msg("DUMP: ~p~n", [[PortNo, NodeType, Proto, HiVer, LoVer, NodeName, Extra, Creation]]),
+	error_logger:info_msg(
+		"ErlPMD: alive request from ~s:~b PortNo: ~b, NodeType: ~b, Proto: ~b, HiVer: ~b, LoVer: ~b, NodeName: ~s, Extra: ~p, Creation: ~b.~n",
+		[inet_parse:ntoa(Ip), Port, PortNo, NodeType, Proto, HiVer, LoVer, NodeName, Extra, Creation]),
 	ets:lookup(?MODULE, NodeName) == [] orelse ets:delete(erlpmd, NodeName),
 	ets:insert_new(?MODULE, {NodeName, {PortNo, NodeType, Proto, HiVer, LoVer, Extra, Creation, Fd}}),
 	gen_server:cast(listener, {msg, <<$y, 0:8, Creation:16>>, Ip, Port}),
