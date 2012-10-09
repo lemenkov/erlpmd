@@ -118,6 +118,7 @@ handle_cast({msg,<<$k>>, Fd, Ip, Port}, false) ->
 
 handle_cast({msg,<<$s, _/binary>>, Fd, Ip, Port}, false) ->
 	% Ignore stop command in case we're running w/o -relaxed_command_check
+	error_logger:info_msg("ErlPMD: stop request from ~s:~p. (IGNORED)~n", [inet_parse:ntoa(Ip), Port]),
 	gen_server:cast(listener, {msg, <<"STOPPED">>, Ip, Port}),
 	{noreply, false};
 handle_cast({msg,<<$s, NodeName/binary>>, Fd, Ip, Port}, true) ->
