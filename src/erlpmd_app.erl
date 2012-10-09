@@ -33,7 +33,7 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-	{ok, Ip} = application:get_env(erlpmd,addr),
+	{ok, Ip} = application:get_env(erlpmd,address),
 	{ok, Port} = application:get_env(erlpmd,port),
 	erlpmd_sup:start_link(Ip,Port).
 
