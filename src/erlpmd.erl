@@ -96,23 +96,24 @@ handle_cast({msg,<<$d>>, Fd, Ip, Port}, State) ->
 	gen_server:cast(listener, {close, Ip, Port}),
 	{noreply, State};
 
-handle_cast({msg,<<$k>>, Fd, Ip, Port}, RelaxedCommandCheck) ->
+handle_cast({msg,<<$k>>, Fd, Ip, Port}, true) ->
+	% Allow stop command in case we're running wint -relaxed_command_check
+	% w/o checking for actually available nodes
+	error_logger:info_msg("ErlPMD: kill request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
+	gen_server:cast(listener, {msg, <<"OK">>, Ip, Port}),
+	gen_server:cast(listener, stop),
+	{stop, normal, true};
+handle_cast({msg,<<$k>>, Fd, Ip, Port}, false) ->
 	error_logger:info_msg("ErlPMD: kill request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
 	gen_server:cast(listener, {msg, <<"OK">>, Ip, Port}),
 	case ets:match(erlpmd, {'_', {'_', '_', '_', '_', '_', '_', '_', '_'}}) of
 		[] ->
 			% No live nodes - we may exit now
 			gen_server:cast(listener, stop),
-			{stop, normal, RelaxedCommandCheck};
+			{stop, normal, false};
 		_ ->
-			case RelaxedCommandCheck of
-				true ->
-					gen_server:cast(listener, stop),
-					{stop, normal, RelaxedCommandCheck};
-				false ->
-					% Disallow killing witl live nodes
-					{noreply, RelaxedCommandCheck}
-			end
+			% Disallow killing witl live nodes
+			{noreply, false}
 	end;
 
 handle_cast({msg,<<$s, _/binary>>, Fd, Ip, Port}, false) ->
