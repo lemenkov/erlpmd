@@ -71,7 +71,7 @@ handle_cast({msg,<<$x, PortNo:16, NodeType:8, Proto:8, HiVer:16, LoVer:16, NLen:
 	{noreply, State};
 
 handle_cast({msg,<<$z, NodeName/binary>>, Fd, Ip, Port}, State) ->
-	error_logger:info_msg("ErlPMD: port request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
+	error_logger:info_msg("ErlPMD: port ~s request from ~s:~p.~n", [NodeName, inet_parse:ntoa(Ip), Port]),
 	case ets:lookup(?MODULE, NodeName) of
 		[] ->
 			gen_server:cast(listener, {msg, <<$w, 1:8>>, Ip, Port});
@@ -84,7 +84,7 @@ handle_cast({msg,<<$z, NodeName/binary>>, Fd, Ip, Port}, State) ->
 	{noreply, State};
 
 handle_cast({msg,<<$n>>, Fd, Ip, Port}, State) ->
-	error_logger:info_msg("ErlPMD: name request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
+	error_logger:info_msg("ErlPMD: name(s) request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
 	Nodes = list_to_binary(lists:flatten([ io_lib:format("name ~s at port ~p~n", [X, Y]) || [X, Y] <- ets:match(erlpmd, {'$1', {'$2', 77, '_', '_', '_', '_', '_', '_'}})])),
 	gen_server:cast(listener, {msg, <<4369:32, Nodes/binary>>, Ip, Port}),
 	gen_server:cast(listener, {close, Ip, Port}),
