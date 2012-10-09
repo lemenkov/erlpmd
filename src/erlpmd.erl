@@ -63,11 +63,17 @@ handle_cast({msg,<<$x, PortNo:16, NodeType:8, Proto:8, HiVer:16, LoVer:16, NLen:
 	<<NodeName:NLen/binary, ELen:16, Extra/binary>> = Rest,
 	Creation = random:uniform(3),
 	error_logger:info_msg(
-		"ErlPMD: alive request from ~s:~b PortNo: ~b, NodeType: ~b, Proto: ~b, HiVer: ~b, LoVer: ~b, NodeName: ~s, Extra: ~p, Creation: ~b.~n",
+		"ErlPMD: alive request from ~s:~b PortNo: ~b, NodeType: ~b, Proto: ~b, HiVer: ~b, LoVer: ~b, NodeName: '~s', Extra: ~p, Creation: ~b.~n",
 		[inet_parse:ntoa(Ip), Port, PortNo, NodeType, Proto, HiVer, LoVer, NodeName, Extra, Creation]),
-	ets:lookup(?MODULE, NodeName) == [] orelse ets:delete(erlpmd, NodeName),
-	ets:insert_new(?MODULE, {NodeName, {PortNo, NodeType, Proto, HiVer, LoVer, Extra, Creation, Fd}}),
-	gen_server:cast(listener, {msg, <<$y, 0:8, Creation:16>>, Ip, Port}),
+	case ets:lookup(?MODULE, NodeName) of
+		[] ->
+			ets:insert_new(?MODULE, {NodeName, {PortNo, NodeType, Proto, HiVer, LoVer, Extra, Creation, Fd}}),
+			gen_server:cast(listener, {msg, <<$y, 0:8, Creation:16>>, Ip, Port});
+		_ ->
+			% Already registered - reply with error
+			error_logger:error_msg("ErlPMD: ~s 'name' is already registered.~n", [NodeName]),
+			gen_server:cast(listener, {msg, <<$y, 1:8, 99:16>>, Ip, Port})
+	end,
 	{noreply, State};
 
 handle_cast({msg,<<$z, NodeName/binary>>, Fd, Ip, Port}, State) ->
@@ -117,13 +123,13 @@ handle_cast({msg,<<$k>>, Fd, Ip, Port}, false) ->
 			{noreply, false}
 	end;
 
-handle_cast({msg,<<$s, _/binary>>, Fd, Ip, Port}, false) ->
+handle_cast({msg,<<$s, NodeName/binary>>, Fd, Ip, Port}, false) ->
 	% Ignore stop command in case we're running w/o -relaxed_command_check
-	error_logger:info_msg("ErlPMD: stop request from ~s:~p. (IGNORED)~n", [inet_parse:ntoa(Ip), Port]),
+	error_logger:info_msg("ErlPMD: '~s' stop request from ~s:~p. (IGNORED)~n", [NodeName, inet_parse:ntoa(Ip), Port]),
 	gen_server:cast(listener, {msg, <<"STOPPED">>, Ip, Port}),
 	{noreply, false};
 handle_cast({msg,<<$s, NodeName/binary>>, Fd, Ip, Port}, true) ->
-	error_logger:info_msg("ErlPMD: stop request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
+	error_logger:info_msg("ErlPMD: '~s' stop request from ~s:~p.~n", [NodeName, inet_parse:ntoa(Ip), Port]),
 	case ets:match(erlpmd, {NodeName, {'_', '_', '_', '_', '_', '_', '_', '_'}}) of
 		[] ->
 			gen_server:cast(listener, {msg, <<"NOEXIST">>, Ip, Port});
