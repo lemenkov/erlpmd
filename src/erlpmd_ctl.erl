@@ -29,13 +29,12 @@ start() ->
 	% Check environment variables first
 	EnvAddr = case os:getenv("ERL_EPMD_ADDRESS") of
 		false -> {0,0,0,0};
-		% FIXME
-		AddrStr -> {0,0,0,0}
+		AS -> addrstr_to_ip(AS)
 	end,
 
 	EnvPort = case os:getenv("ERL_EPMD_PORT") of
 		false -> 4369;
-		PortStr -> list_to_integer(PortStr)
+		PS -> list_to_integer(PS)
 	end,
 
 	EnvRelaxedCommandCheck = case os:getenv("ERL_EPMD_RELAXED_COMMAND_CHECK") of
@@ -46,8 +45,7 @@ start() ->
 	% Now check for command-line switches
 	Addr = case init:get_argument(address)of
 		error -> EnvAddr;
-		 % FIXME
-		{ok,[[AddrStr]]} -> {0,0,0,0}
+		{ok,[[AddrStr]]} -> addrstr_to_ip(AddrStr)
 	end,
 
 	Port = case init:get_argument(port) of
@@ -80,3 +78,12 @@ start() ->
 	application:set_env(erlpmd, relaxed_command_check, RelaxedCommandCheck),
 
 	application:start(erlpmd).
+
+
+%%
+%% Private functions
+%%
+
+addrstr_to_ip(AddrStr) ->
+	% FIXME
+	 {0,0,0,0}.
