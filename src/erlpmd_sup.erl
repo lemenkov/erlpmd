@@ -31,20 +31,19 @@
 %% Supervisor callbacks
 -export([init/1]).
 
-%% Helper macro for declaring children of supervisor
--define(CHILD(I, Type, Args), {I, {I, start_link, [Args]}, transient, 5000, Type, [I]}).
-
 %% ===================================================================
 %% API functions
 %% ===================================================================
 
-start_link(Ip,Port) ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, [Ip,Port]).
+start_link(Ips,Port) when is_list(Ips) ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, [Ips,Port]).
 
 %% ===================================================================
 %% Supervisor callbacks
 %% ===================================================================
 
-init([Ip,Port]) ->
-	{ok, { {one_for_one, 5, 10}, [?CHILD(erlpmd, worker, []), ?CHILD(tcp_listener, worker, [Ip, Port])]}}.
+init([Ips,Port]) when is_list (Ips) ->
+	ErlPMD = {erlpmd, {erlpmd, start_link, [[]]}, transient, 5000, worker, [erlpmd]},
+	Listeners = [{{ip, Ip}, {tcp_listener, start_link, [[Ip,Port]]}, transient, 5000, worker, [tcp_listener]} || Ip <- Ips],
+	{ok, {{one_for_one, 5, 10}, [ErlPMD | Listeners]}}.
 

@@ -28,7 +28,7 @@
 start() ->
 	% Check environment variables first
 	EnvAddr = case os:getenv("ERL_EPMD_ADDRESS") of
-		false -> {0,0,0,0};
+		false -> [{0,0,0,0}];
 		AS -> addrstr_to_ip(AS)
 	end,
 
@@ -85,5 +85,4 @@ start() ->
 %%
 
 addrstr_to_ip(AddrStr) ->
-	% FIXME
-	 {0,0,0,0}.
+	[begin {ok, Y} = inet_parse:address(X), Y end || X <-string:tokens(AddrStr,",")].

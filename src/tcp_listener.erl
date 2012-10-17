@@ -41,7 +41,7 @@
 }).
 
 start_link(Args) ->
-	gen_server:start_link({local, listener}, ?MODULE, Args, []).
+	gen_server:start_link(?MODULE, Args, []).
 
 init ([{I0, I1, I2, I3, I4, I5, I6, I7} = IPv6, Port]) when
 	is_integer(I0), I0 >= 0, I0 < 65535,
@@ -55,7 +55,7 @@ init ([{I0, I1, I2, I3, I4, I5, I6, I7} = IPv6, Port]) when
 	Opts = [{ip, IPv6}, binary, {packet, 2}, {reuseaddr, true}, {keepalive, true}, {backlog, 30}, {active, false}, inet6],
 	{ok, Socket} = gen_tcp:listen(Port, Opts),
 	{ok, Ref} = prim_inet:async_accept(Socket, -1),
-	error_logger:info_msg("ErlPMD listener: started at ~s:~b.~n", [inet_parse:ntoa(IPv6), Port]),
+	error_logger:info_msg("ErlPMD listener: started at IPv6: [~s]:~b~n", [inet_parse:ntoa(IPv6), Port]),
 	{ok, #state{listener = Socket, acceptor = Ref}};
 
 init ([{I0, I1, I2, I3} = IPv4, Port]) when
@@ -66,7 +66,7 @@ init ([{I0, I1, I2, I3} = IPv4, Port]) when
 	Opts = [{ip, IPv4}, binary, {packet, 2}, {reuseaddr, true}, {keepalive, true}, {backlog, 30}, {active, false}],
 	{ok, Socket} = gen_tcp:listen(Port, Opts),
 	{ok, Ref} = prim_inet:async_accept(Socket, -1),
-	error_logger:info_msg("ErlPMD listener: started at ~s:~b~n", [inet_parse:ntoa(IPv4), Port]),
+	error_logger:info_msg("ErlPMD listener: started at IPv4: ~s:~b~n", [inet_parse:ntoa(IPv4), Port]),
 	{ok, #state{listener = Socket, acceptor = Ref}}.
 
 handle_call(Other, From, State) ->
@@ -84,13 +84,13 @@ handle_cast({msg, Msg, Ip, Port}, State = #state{clients=Clients}) ->
 	end,
 	{noreply, State};
 
-handle_cast({close, Ip, Port}, State = #state{clients=Clients}) ->
+handle_cast({close, Ip, Port}, #state{clients = Clients} = State) ->
 	error_logger:info_msg("ErlPMD listener: closing connection: ~s:~b.~n", [inet_parse:ntoa(Ip), Port]),
 	case get_socket(Clients, Ip, Port) of
 		error ->
 			ok;
 		Fd ->
-			gen_server:cast(erlpmd, {close, Fd}),
+			gen_server:cast(erlpmd, {{close, self()}, Fd}),
 			gen_tcp:close(Fd)
 	end,
 	{noreply, State};
@@ -105,16 +105,16 @@ handle_cast(Other, State) ->
 handle_info({tcp, Fd, Msg}, State) ->
 	inet:setopts(Fd, [{active, once}, {packet, 2}, binary]),
 	{ok, {Ip, Port}} = inet:peername(Fd),
-	gen_server:cast(erlpmd, {msg, Msg, Fd, Ip, Port}),
+	gen_server:cast(erlpmd, {{msg, self()}, Msg, Fd, Ip, Port}),
 	{noreply, State};
 
-handle_info({tcp_closed, Client}, State = #state{clients=Clients}) ->
+handle_info({tcp_closed, Client}, #state{clients = Clients} = State) ->
 	gen_tcp:close(Client),
-	gen_server:cast(erlpmd, {close, Client}),
+	gen_server:cast(erlpmd, {{close, self()}, Client}),
 	error_logger:info_msg("ErlPMD listener: client ~p closed connection.~n", [Client]),
 	{noreply, State#state{clients = lists:delete(Client, Clients)}};
 
-handle_info({inet_async, ListSock, Ref, {ok, CliSocket}}, #state{listener=ListSock, acceptor=Ref, clients = Clients} = State) ->
+handle_info({inet_async, ListSock, Ref, {ok, CliSocket}}, #state{listener = ListSock, acceptor = Ref, clients = Clients} = State) ->
 	case set_sockopt(ListSock, CliSocket) of
 		ok -> ok;
 		{error, Reason} -> exit({set_sockopt, Reason})
@@ -129,7 +129,7 @@ handle_info({inet_async, ListSock, Ref, {ok, CliSocket}}, #state{listener=ListSo
 
 	{noreply, State#state{acceptor=NewRef, clients = Clients ++ [CliSocket]}};
 
-handle_info({inet_async, ListSock, Ref, Error}, #state{listener=ListSock, acceptor=Ref} = State) ->
+handle_info({inet_async, ListSock, Ref, Error}, #state{listener = ListSock, acceptor = Ref} = State) ->
 	error_logger:error_msg("ErlPMD listener: error in socket acceptor: ~p.~n", [Error]),
 	{stop, Error, State};
 
