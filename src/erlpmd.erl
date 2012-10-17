@@ -23,7 +23,6 @@
 
 -module(erlpmd).
 -behaviour(gen_server).
--define(SERVER, ?MODULE).
 
 %% ------------------------------------------------------------------
 %% API Function Exports
@@ -43,14 +42,14 @@
 %% ------------------------------------------------------------------
 
 start_link(Args) ->
-	gen_server:start_link({local, ?SERVER}, ?MODULE, Args, []).
+	gen_server:start_link({local, ?MODULE}, ?MODULE, Args, []).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
 %% ------------------------------------------------------------------
 
 init(Args) ->
-	?MODULE = ets:new(?MODULE, [public, named_table]),
+	erlpmd = ets:new(erlpmd, [public, named_table]),
 	error_logger:info_msg("ErlPMD: started.~n"),
 	{ok, RelaxedCommandCheck} = application:get_env(erlpmd, relaxed_command_check),
 	{ok, RelaxedCommandCheck}.
@@ -65,9 +64,9 @@ handle_cast({{msg,From},<<$x, PortNo:16, NodeType:8, Proto:8, HiVer:16, LoVer:16
 	error_logger:info_msg(
 		"ErlPMD: alive request from ~s:~b PortNo: ~b, NodeType: ~b, Proto: ~b, HiVer: ~b, LoVer: ~b, NodeName: '~s', Extra: ~p, Creation: ~b.~n",
 		[inet_parse:ntoa(Ip), Port, PortNo, NodeType, Proto, HiVer, LoVer, NodeName, Extra, Creation]),
-	case ets:lookup(?MODULE, NodeName) of
+	case ets:lookup(erlpmd, NodeName) of
 		[] ->
-			ets:insert_new(?MODULE, {NodeName, {PortNo, NodeType, Proto, HiVer, LoVer, Extra, Creation, Fd}}),
+			ets:insert_new(erlpmd, {NodeName, {PortNo, NodeType, Proto, HiVer, LoVer, Extra, Creation, Fd}}),
 			gen_server:cast(From, {msg, <<$y, 0:8, Creation:16>>, Ip, Port});
 		_ ->
 			% Already registered - reply with error
@@ -78,7 +77,7 @@ handle_cast({{msg,From},<<$x, PortNo:16, NodeType:8, Proto:8, HiVer:16, LoVer:16
 
 handle_cast({{msg, From},<<$z, NodeName/binary>>, Fd, Ip, Port}, State) ->
 	error_logger:info_msg("ErlPMD: port ~s request from ~s:~p.~n", [NodeName, inet_parse:ntoa(Ip), Port]),
-	case ets:lookup(?MODULE, NodeName) of
+	case ets:lookup(erlpmd, NodeName) of
 		[] ->
 			gen_server:cast(From, {msg, <<$w, 1:8>>, Ip, Port});
 		[{NodeName, {PortNo, NodeType, Proto, HiVer, LoVer, Extra, _, _}}] ->
