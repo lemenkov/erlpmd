@@ -1,0 +1,26 @@
+[Unit]
+Description=Erlang Port Mapper Daemon
+After=network.target
+
+[Service]
+User=erlpmd
+Group=erlpmd
+StandardOutput=journal
+StandardError=journal
+# FIXME prevents from starting
+#RootDirectory=/var/empty
+DeviceAllow=/dev/null rw
+PrivateTmp=true
+NoNewPrivileges=true
+Restart=always
+# FIXME can we decrease this to 2 at least?
+LimitNPROC=4
+LimitFSIZE=0
+#SystemCallFilter=recv,recvmsg,sendmsg
+ExecStart=/usr/bin/erl -s erlpmd_ctl -noshell -noinput -relaxed_command_check
+# FIXME add generic erlpmd helpers foir that instead of using epmd as a cli
+ExecStop=/usr/bin/epmd -kill
+
+[Install]
+WantedBy=multi-user.target
+Alias=epmd.service
