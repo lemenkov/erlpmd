@@ -1,6 +1,6 @@
 REBAR ?= $(shell which rebar 2>/dev/null || which ./rebar)
 
-EBAR_FLAGS ?=
+REBAR_FLAGS ?=
 
 all: compile
 

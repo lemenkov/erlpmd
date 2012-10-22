@@ -103,7 +103,7 @@ handle_cast({{msg, From},<<$d>>, Fd, Ip, Port}, State) ->
 	{noreply, State};
 
 handle_cast({{msg, From},<<$k>>, Fd, Ip, Port}, true) ->
-	% Allow stop command in case we're running wint -relaxed_command_check
+	% Allow stop command in case we're running with -relaxed_command_check
 	% w/o checking for actually available nodes
 	error_logger:info_msg("ErlPMD: kill request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
 	gen_server:cast(From, {msg, <<"OK">>, Ip, Port}),
