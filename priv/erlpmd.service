@@ -13,7 +13,6 @@ DeviceAllow=/dev/null rw
 PrivateTmp=true
 NoNewPrivileges=true
 Restart=always
-# FIXME can we decrease this to 2 at least?
 LimitNPROC=4
 LimitFSIZE=0
 ExecStart=/usr/bin/erl -s erlpmd_ctl -smp disable -noshell -noinput -relaxed_command_check
