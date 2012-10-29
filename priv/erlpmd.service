@@ -16,7 +16,6 @@ Restart=always
 # FIXME can we decrease this to 2 at least?
 LimitNPROC=4
 LimitFSIZE=0
-#SystemCallFilter=recv,recvmsg,sendmsg
 ExecStart=/usr/bin/erl -s erlpmd_ctl -smp disable -noshell -noinput -relaxed_command_check
 # FIXME add generic erlpmd helpers foir that instead of using epmd as a cli
 ExecStop=/usr/bin/epmd -kill
