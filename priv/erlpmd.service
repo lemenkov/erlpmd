@@ -7,8 +7,7 @@ User=erlpmd
 Group=erlpmd
 StandardOutput=journal
 StandardError=journal
-# FIXME prevents from starting
-#RootDirectory=/var/empty
+WorkingDirectory=/var/empty
 DeviceAllow=/dev/null rw
 PrivateTmp=true
 NoNewPrivileges=true
