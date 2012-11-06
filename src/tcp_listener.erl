@@ -43,30 +43,11 @@
 start_link(Args) ->
 	gen_server:start_link(?MODULE, Args, []).
 
-init ([{I0, I1, I2, I3, I4, I5, I6, I7} = IPv6, Port]) when
-	is_integer(I0), I0 >= 0, I0 < 65535,
-	is_integer(I1), I1 >= 0, I1 < 65535,
-	is_integer(I2), I2 >= 0, I2 < 65535,
-	is_integer(I3), I3 >= 0, I3 < 65535,
-	is_integer(I4), I4 >= 0, I4 < 65535,
-	is_integer(I5), I5 >= 0, I5 < 65535,
-	is_integer(I6), I6 >= 0, I6 < 65535,
-	is_integer(I7), I7 >= 0, I7 < 65535 ->
-	Opts = [{ip, IPv6}, binary, {packet, 2}, {reuseaddr, true}, {keepalive, true}, {backlog, 30}, {active, false}, inet6],
+init ([IP, Port]) ->
+	Opts = [{ip, IP}, binary, {packet, 2}, {reuseaddr, true}, {keepalive, true}, {backlog, 30}, {active, false}],
 	{ok, Socket} = gen_tcp:listen(Port, Opts),
 	{ok, Ref} = prim_inet:async_accept(Socket, -1),
-	error_logger:info_msg("ErlPMD listener: started at IPv6: [~s]:~b~n", [inet_parse:ntoa(IPv6), Port]),
-	{ok, #state{listener = Socket, acceptor = Ref}};
-
-init ([{I0, I1, I2, I3} = IPv4, Port]) when
-	is_integer(I0), I0 >= 0, I0 < 256,
-	is_integer(I1), I1 >= 0, I1 < 256,
-	is_integer(I2), I2 >= 0, I2 < 256,
-	is_integer(I3), I3 >= 0, I3 < 256 ->
-	Opts = [{ip, IPv4}, binary, {packet, 2}, {reuseaddr, true}, {keepalive, true}, {backlog, 30}, {active, false}],
-	{ok, Socket} = gen_tcp:listen(Port, Opts),
-	{ok, Ref} = prim_inet:async_accept(Socket, -1),
-	error_logger:info_msg("ErlPMD listener: started at IPv4: ~s:~b~n", [inet_parse:ntoa(IPv4), Port]),
+	error_logger:info_msg("ErlPMD listener: started at IP: ~s:~b~n", [inet_parse:ntoa(IP), Port]),
 	{ok, #state{listener = Socket, acceptor = Ref}}.
 
 handle_call(Other, From, State) ->
