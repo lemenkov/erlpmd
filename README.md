@@ -35,7 +35,7 @@ itself.
 It stores nodes' data in the ETS storage.
 
 <h1>Installation</h1>
-You need [erlando](https://github.com/rabbitmq/erlando) installed.
+tbd
 
 <h1>Usage</h1>
 
