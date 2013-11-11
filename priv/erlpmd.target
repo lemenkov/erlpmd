@@ -1,8 +1,0 @@
-[Unit]
-Description=EPMD service.
-Requires=epmd-settle.service
-After=epmd-settle.service
-
-[Install]
-Alias=epmd.target
-

@@ -19,5 +19,4 @@ ExecStart=/usr/bin/erl -s erlpmd_ctl -smp disable -noshell -noinput -relaxed_com
 ExecStop=/usr/bin/epmd -kill
 
 [Install]
-WantedBy=epmd.target
 Alias=epmd.service
