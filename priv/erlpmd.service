@@ -5,6 +5,7 @@ After=network.target
 [Service]
 User=erlpmd
 Group=erlpmd
+Type=notify
 StandardOutput=journal
 StandardError=journal
 WorkingDirectory=/var/empty

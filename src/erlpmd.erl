@@ -51,6 +51,7 @@ start_link(Args) ->
 init(Args) ->
 	erlpmd = ets:new(erlpmd, [public, named_table]),
 	error_logger:info_msg("ErlPMD: started.~n"),
+	self() ! notify_init,
 	{ok, RelaxedCommandCheck} = application:get_env(erlpmd, relaxed_command_check),
 	{ok, RelaxedCommandCheck}.
 
@@ -150,6 +151,11 @@ handle_cast({{close, From}, Fd}, State) ->
 handle_cast(Msg, State) ->
 	error_logger:warning_msg("ErlPMD: strange cast: ~p.~n", [Msg]),
 	{noreply, State}.
+
+handle_info(notify_init, State) ->
+	error_logger:warning_msg("ErlPMD: info: ~p while ~p.~n", [notify_init, State]),
+	sd_notify:sd_notifyf(0, "READY=1~nSTATUS=~s", ["Hello from ErlPMD"]),
+	{noreply, State};
 
 handle_info(Info, State) ->
 	error_logger:warning_msg("ErlPMD: strange info: ~p.~n", [Info]),
