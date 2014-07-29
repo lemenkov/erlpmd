@@ -42,11 +42,21 @@
 start_link(Args) ->
 	gen_server:start_link(?MODULE, Args, []).
 
-init ([IP, Port]) ->
-	Opts = [{ip, IP}, binary, {packet, 2}, {reuseaddr, true}, {keepalive, true}, {backlog, 30}, {active, false}],
-	{ok, Socket} = gen_tcp:listen(Port, Opts),
+init ([Ip, Port]) ->
+	SysPid = os:getpid(),
+	{ok, Socket} = case {os:getenv("LISTEN_PID"), os:getenv("LISTEN_FDS")} of
+			       {SysPid, "1"} ->
+				       Opts = [binary, {packet, 2}, {reuseaddr, true}, {keepalive, true}, {active, false}],
+				       %% LISTEN_FDS starts with 3
+				       {ok, S} = gen_tcp:fdopen(3, Opts),
+				       ok = prim_inet:listen(S),
+				       {ok, S};
+			       _ ->
+				       Opts = [{ip, Ip}, binary, {packet, 2}, {reuseaddr, true}, {keepalive, true}, {backlog, 30}, {active, false}],
+				       gen_tcp:listen(Port, Opts)
+		       end,
 	{ok, Ref} = prim_inet:async_accept(Socket, -1),
-	error_logger:info_msg("ErlPMD listener: started at IP: ~s:~b~n", [inet_parse:ntoa(IP), Port]),
+	error_logger:info_msg("ErlPMD listener: started at Ip: ~s:~b~n", [inet_parse:ntoa(Ip), Port]),
 	{ok, #state{listener = Socket, acceptor = Ref}}.
 
 handle_call(Other, From, State) ->
