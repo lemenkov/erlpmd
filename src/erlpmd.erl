@@ -48,7 +48,7 @@ start_link(Args) ->
 %% gen_server Function Definitions
 %% ------------------------------------------------------------------
 
-init(Args) ->
+init(_Args) ->
 	erlpmd = ets:new(erlpmd, [public, named_table]),
 	error_logger:info_msg("ErlPMD: started.~n"),
 	self() ! notify_init,
@@ -60,7 +60,7 @@ handle_call(Request, From, State) ->
 	{reply, ok, State}.
 
 handle_cast({{msg,From},<<$x, PortNo:16, NodeType:8, Proto:8, HiVer:16, LoVer:16, NLen:16, Rest/binary>>, Fd, Ip, Port}, State) ->
-	<<NodeName:NLen/binary, ELen:16, Extra/binary>> = Rest,
+	<<NodeName:NLen/binary, _ELen:16, Extra/binary>> = Rest,
 	Creation = random:uniform(3),
 	error_logger:info_msg(
 		"ErlPMD: alive request from ~s:~b PortNo: ~b, NodeType: ~b, Proto: ~b, HiVer: ~b, LoVer: ~b, NodeName: '~s', Extra: ~p, Creation: ~b.~n",
@@ -76,7 +76,7 @@ handle_cast({{msg,From},<<$x, PortNo:16, NodeType:8, Proto:8, HiVer:16, LoVer:16
 	end,
 	{noreply, State};
 
-handle_cast({{msg, From},<<$z, NodeName/binary>>, Fd, Ip, Port}, State) ->
+handle_cast({{msg, From},<<$z, NodeName/binary>>, _Fd, Ip, Port}, State) ->
 	error_logger:info_msg("ErlPMD: port ~s request from ~s:~p.~n", [NodeName, inet_parse:ntoa(Ip), Port]),
 	case ets:lookup(erlpmd, NodeName) of
 		[] ->
@@ -89,28 +89,28 @@ handle_cast({{msg, From},<<$z, NodeName/binary>>, Fd, Ip, Port}, State) ->
 	gen_server:cast(From, {close, Ip, Port}),
 	{noreply, State};
 
-handle_cast({{msg, From},<<$n>>, Fd, Ip, Port}, State) ->
+handle_cast({{msg, From},<<$n>>, _Fd, Ip, Port}, State) ->
 	error_logger:info_msg("ErlPMD: name(s) request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
 	Nodes = list_to_binary(lists:flatten([ io_lib:format("name ~s at port ~p~n", [X, Y]) || [X, Y] <- ets:match(erlpmd, {'$1', {'$2', 77, '_', '_', '_', '_', '_', '_'}})])),
 	gen_server:cast(From, {msg, <<4369:32, Nodes/binary>>, Ip, Port}),
 	gen_server:cast(From, {close, Ip, Port}),
 	{noreply, State};
 
-handle_cast({{msg, From},<<$d>>, Fd, Ip, Port}, State) ->
+handle_cast({{msg, From},<<$d>>, _Fd, Ip, Port}, State) ->
 	error_logger:info_msg("ErlPMD: dump request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
 	Nodes = list_to_binary(lists:flatten([ io_lib:format("active name     ~s at port ~p, fd = ~p ~n", [X, Y, F]) || [X, Y, F] <- ets:match(erlpmd, {'$1', {'$2', 77, '_', '_', '_', '_', '_', '$3'}})])),
 	gen_server:cast(From, {msg, <<4369:32, Nodes/binary>>, Ip, Port}),
 	gen_server:cast(From, {close, Ip, Port}),
 	{noreply, State};
 
-handle_cast({{msg, From},<<$k>>, Fd, Ip, Port}, true) ->
+handle_cast({{msg, From},<<$k>>, _Fd, Ip, Port}, true) ->
 	% Allow stop command in case we're running with -relaxed_command_check
 	% w/o checking for actually available nodes
 	error_logger:info_msg("ErlPMD: kill request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
 	gen_server:cast(From, {msg, <<"OK">>, Ip, Port}),
 	gen_server:cast(From, stop),
 	{stop, normal, true};
-handle_cast({{msg, From},<<$k>>, Fd, Ip, Port}, false) ->
+handle_cast({{msg, From},<<$k>>, _Fd, Ip, Port}, false) ->
 	error_logger:info_msg("ErlPMD: kill request from ~s:~p.~n", [inet_parse:ntoa(Ip), Port]),
 	gen_server:cast(From, {msg, <<"OK">>, Ip, Port}),
 	case ets:match(erlpmd, {'_', {'_', '_', '_', '_', '_', '_', '_', '_'}}) of
@@ -123,12 +123,12 @@ handle_cast({{msg, From},<<$k>>, Fd, Ip, Port}, false) ->
 			{noreply, false}
 	end;
 
-handle_cast({{msg, From},<<$s, NodeName/binary>>, Fd, Ip, Port}, false) ->
+handle_cast({{msg, From},<<$s, NodeName/binary>>, _Fd, Ip, Port}, false) ->
 	% Ignore stop command in case we're running w/o -relaxed_command_check
 	error_logger:info_msg("ErlPMD: '~s' stop request from ~s:~p. (IGNORED)~n", [NodeName, inet_parse:ntoa(Ip), Port]),
 	gen_server:cast(From, {msg, <<"STOPPED">>, Ip, Port}),
 	{noreply, false};
-handle_cast({{msg, From},<<$s, NodeName/binary>>, Fd, Ip, Port}, true) ->
+handle_cast({{msg, From},<<$s, NodeName/binary>>, _Fd, Ip, Port}, true) ->
 	error_logger:info_msg("ErlPMD: '~s' stop request from ~s:~p.~n", [NodeName, inet_parse:ntoa(Ip), Port]),
 	case ets:match(erlpmd, {NodeName, {'_', '_', '_', '_', '_', '_', '_', '_'}}) of
 		[] ->
@@ -140,7 +140,7 @@ handle_cast({{msg, From},<<$s, NodeName/binary>>, Fd, Ip, Port}, true) ->
 	gen_server:cast(From, {close, Ip, Port}),
 	{noreply, true};
 
-handle_cast({{close, From}, Fd}, State) ->
+handle_cast({{close, _From}, Fd}, State) ->
 	error_logger:info_msg("ErlPMD: closed connection: ~p.~n", [Fd]),
 	case ets:match(erlpmd, {'$1', {'_', '_', '_', '_', '_', '_', '_', Fd}}) of
 		[[NodeName]] -> ets:delete(erlpmd, NodeName);
@@ -171,4 +171,3 @@ code_change(_OldVsn, State, _Extra) ->
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
-
